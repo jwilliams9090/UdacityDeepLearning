@@ -49,9 +49,11 @@ class NeuralNetwork(object):
 
         for X, y in zip(features, targets):
             final_outputs, hidden_outputs = self.forward_pass_train(X)  # Implement the forward pass function below
+            
             # Implement the backproagation function below
             delta_weights_i_h, delta_weights_h_o = self.backpropagation(final_outputs, hidden_outputs, X, y, 
                                                                         delta_weights_i_h, delta_weights_h_o)
+            
         self.update_weights(delta_weights_i_h, delta_weights_h_o, n_records)
 
 
@@ -67,10 +69,19 @@ class NeuralNetwork(object):
         ### Forward pass ###
         # TODO: Hidden layer - Replace these values with your calculations.
         hidden_inputs = np.dot(X, self.weights_input_to_hidden)     # signals into hidden layer
+        print("hidden_inputs")
+        print(hidden_inputs)
+        
         hidden_outputs = self.activation_function(hidden_inputs)    # signals from hidden layer
+        print("hidden_outputs shapes")
+        print(hidden_outputs)
+        print(hidden_outputs.shape)
+        print(self.weights_hidden_to_output.shape)
 
         # TODO: Output layer - Replace these values with your calculations.
         final_inputs = np.dot(hidden_outputs, self.weights_hidden_to_output)  # signals into final output layer
+        print("final_inputs")
+        print(final_inputs)
         final_outputs = final_inputs  #self.activation_function(final_inputs)  # signals from final output layer     
         
         return final_outputs, hidden_outputs
@@ -95,26 +106,50 @@ class NeuralNetwork(object):
         
         
         # TODO: Backpropagated error terms - Replace these values with your calculations.
-        output_error_term = error * final_outputs * (1 - final_outputs) 
-
-        """
-        I'm not sure what the problem is with the code above, I was using Lesson 8 Implementing Backpropagation as the guide
-        Comment from the code review:
-        Please do remember that once you change the forward pass to that of a regression output the backpropagation code needs to be changed for the function f(x) = x -> f'(x) = 1.
-        """
+        # jw orig output_error_term = error * final_outputs * (1 - final_outputs) 
+        # output_error_term = - error * np.dot(hidden_outputs * (1 - hidden_outputs), self.weights_hidden_to_output) * X[:,None] 
+        output_error_term = error
         
         
-        
+        #EXAMPLES from Implementing Backpropagation code
         # TODO: Calculate the hidden layer's contribution to the error
-        hidden_error = y - hidden_outputs      
-      
-        hidden_error_term = hidden_error * hidden_outputs * (1 - hidden_outputs)   # None
-           
+        #hidden_error = np.dot(output_error_term, weights_hidden_output)
+        
+        # TODO: Calculate the error term for the hidden layer
+        # hidden_error_term = hidden_error * hidden_output * (1 - hidden_output)
+        
+        
+        print("hidden error")
+        print(error.shape)
+        print(hidden_outputs)
+        print("hidden weight shape")
+        print(self.weights_hidden_to_output)
+        print(self.weights_hidden_to_output.shape)
+        # TODO: Calculate the hidden layer's contribution to the error
+        # *hidden_error* It should be the product of the output error and the weight from hidden layer
+        hidden_error = np.dot(output_error_term, self.weights_hidden_to_output)
+        
+        # *hidden_error_term* should be the Weight from hidden layer * error terms * differential of output of the hidden unit
+        hidden_error_term = hidden_error * hidden_outputs * (1 - hidden_outputs) 
+        
+        
+        # orig hidden_error = error * hidden_outputs
+        # orig hidden_error_term = hidden_error * hidden_outputs * (1 - hidden_outputs)   # None
+        
+        
         # Weight step (input to hidden)
         delta_weights_i_h += hidden_error_term * X[:, None] # None
         
+        
         # Weight step (hidden to output)
-        delta_weights_h_o += output_error_term #WRONG * hidden_outputs # None
+        # delta_weights_h_o += output_error_term # * hidden_outputs # None
+        delta_weights_h_o += output_error_term * hidden_outputs[:, None]
+
+
+        # suggested
+        # Weight step (input to hidden)            
+        # delta_weights_h_o += output_error_term * hidden_outputs[:, None]
+            
         
         return delta_weights_i_h, delta_weights_h_o
 
@@ -131,8 +166,8 @@ class NeuralNetwork(object):
         # update hidden-to-output weights with gradient descent step
         # self.weights_hidden_to_output += learning_rate * delta_weights_h_o  / n_records  
         self.weights_hidden_to_output += self.lr * delta_weights_h_o  / n_records  
-        print("self.weights_hidden_to_output")
-        print(self.weights_hidden_to_output)
+        #print("self.weights_hidden_to_output")
+        #print(self.weights_hidden_to_output)
 
         # update input-to-hidden weights with gradient descent step
         #self.weights_input_to_hidden += learning_rate *  delta_weights_i_h / n_records  
